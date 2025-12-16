@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>ToDoList - Testes</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { margin-bottom: 10px; }
+    form { margin-bottom: 20px; }
+    input, button { padding: 5px 10px; margin-right: 5px; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 5px 0; border-bottom: 1px solid #ddd; }
+    .concluida { text-decoration: line-through; color: gray; }
+    .botoes { margin-left: 10px; }
+  </style>
+</head>
+<body>
+  <h1>ToDoList - Testes de API</h1>
+
+  <h2>Cadastrar nova tarefa</h2>
+  <form id="form-tarefa">
+    <input type="text" id="descricao" placeholder="Descrição da tarefa" required>
+    <button type="submit">Adicionar</button>
+  </form>
+
+  <h2>Lista de tarefas</h2>
+  <ul id="lista-tarefas"></ul>
+
+  <script>
+    const API_URL = 'http://localhost:3000/tarefas';
+
+    async function carregarTarefas() {
+      try {
+        const response = await fetch(API_URL);
+        const tarefas = await response.json();
+
+        const lista = document.getElementById('lista-tarefas');
+        lista.innerHTML = '';
+
+        tarefas.forEach(tarefa => {
+          const li = document.createElement('li');
+          li.textContent = `#${tarefa.id} - ${tarefa.descricao}`;
+          if (tarefa.status) {
+            li.classList.add('concluida');
+          }
+
+          const divBotoes = document.createElement('span');
+          divBotoes.className = 'botoes';
+
+          const btnConcluir = document.createElement('button');
+          btnConcluir.textContent = 'Concluir';
+          btnConcluir.onclick = () => concluirTarefa(tarefa.id);
+
+          const btnRemover = document.createElement('button');
+          btnRemover.textContent = 'Remover';
+          btnRemover.onclick = () => removerTarefa(tarefa.id);
+
+          divBotoes.appendChild(btnConcluir);
+          divBotoes.appendChild(btnRemover);
+          li.appendChild(divBotoes);
+
+          lista.appendChild(li);
+        });
+      } catch (err) {
+        console.error('Erro ao carregar tarefas:', err);
+        alert('Erro ao carregar tarefas (ver console).');
+      }
+    }
+
+    async function criarTarefa(descricao) {
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ descricao })
+        });
+
+        if (!response.ok) {
+          throw new Error('Erro ao criar tarefa');
+        }
+
+        await carregarTarefas();
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao criar tarefa.');
+      }
+    }
+
+    async function concluirTarefa(id) {
+      try {
+        const response = await fetch(`${API_URL}/${id}`, {
+          method: 'PUT'
+        });
+
+        if (!response.ok) {
+          throw new Error('Erro ao concluir tarefa');
+        }
+
+        await carregarTarefas();
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao concluir tarefa.');
+      }
+    }
+
+    async function removerTarefa(id) {
+      if (!confirm('Deseja realmente remover esta tarefa?')) return;
+
+      try {
+        const response = await fetch(`${API_URL}/${id}`, {
+          method: 'DELETE'
+        });
+
+        if (!response.ok) {
+          throw new Error('Erro ao remover tarefa');
+        }
+
+        await carregarTarefas();
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao remover tarefa.');
+      }
+    }
+
+    document.getElementById('form-tarefa').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const descricaoInput = document.getElementById('descricao');
+      const descricao = descricaoInput.value.trim();
+      if (descricao) {
+        criarTarefa(descricao);
+        descricaoInput.value = '';
+      }
+    });
+
+    // Carrega tarefas ao abrir a página
+    carregarTarefas();
+  </script>
+</body>
+</html>
